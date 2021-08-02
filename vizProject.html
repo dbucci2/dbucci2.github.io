@@ -1,0 +1,211 @@
+<html>
+<document>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<style> circle {fill: lightblue; stroke: black;} </style>
+    
+<style>
+
+div.tooltip {	
+    position: absolute;			
+    text-align: center;			
+    width: 160px;					
+    height: 30px;					
+    padding: 2px;				
+    font: 12px sans-serif;		
+    background: lightsteelblue;	
+    border: 0px;		
+    border-radius: 8px;			
+    pointer-events: none;			
+}
+    
+</style>
+<body>
+    
+<p id="intro" style='display: block'>Click "Next" to begin exploring car manufacturer data from 2017.</p>
+<p id="second" style='display: none'>The values will be displayed on a logrithmic scale.</p>
+<p id="third" style='display: none'>The x-axis represents the average miles per gallon of cars driven in cities, and the y-axis represents the same idea on highways.</p>
+<p id="fourth" style='display: none'>Each circle represents a single car from the database. Hover over a data point to see its MPG values.</p>
+<p id="fifth" style='display: none'>Finally, the radius of each circle represents the number of that car's engine cylinders. Hover over and see the varying numbers of cylinders.<br><br>
+Thank you for checking out my narrative visualization!</p>
+<button type='button' id="daButton" onclick="textToggle()" style='display: block'>Next</button>
+<button type='button' id="prev" onclick="reverseTextToggle()" style='display: none'>Previous</button>
+
+<svg width=500 height=500>
+</svg>
+    
+<script>
+async function textToggle() {
+    
+    const data = await d3.csv("https://flunky.github.io/cars2017.csv");
+    var x = d3.scaleLog().base(10).domain([10,150]).range([0,400]);
+    var y = d3.scaleLog().base(10).domain([10,150]).range([400,0]);
+    
+    var text = document.getElementById("intro");
+    var text2 = document.getElementById("second");
+    var text3 = document.getElementById("third");
+    var text4 = document.getElementById("fourth");
+    var text5 = document.getElementById("fifth");
+    var button1 = document.getElementById("daButton");
+    var button2 = document.getElementById("prev");
+    
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);
+    
+    // transition functions for next
+    if (text.style.display === "block") {
+        text.style.display = "none";
+        text2.style.display = "block";
+        button2.style.display = "block";
+        axes(x,y);
+    } else if (text2.style.display === "block") {
+        text2.style.display = "none";
+        text3.style.display = "block";
+    } else if (text3.style.display === "block") {
+        text3.style.display = "none";
+        text4.style.display = "block";
+        graph(x,y,data);
+    } else {
+        text4.style.display = "none";
+        text5.style.display = "block";
+        button1.style.display = "none";
+        graph2(x,y,data);
+    }
+    
+}
+    
+async function reverseTextToggle() {
+    
+    const data = await d3.csv("https://flunky.github.io/cars2017.csv");
+    var x = d3.scaleLog().base(10).domain([10,150]).range([0,400]);
+    var y = d3.scaleLog().base(10).domain([10,150]).range([400,0]);
+    
+    var text = document.getElementById("intro");
+    var text2 = document.getElementById("second");
+    var text3 = document.getElementById("third");
+    var text4 = document.getElementById("fourth");
+    var text5 = document.getElementById("fifth");
+    var button1 = document.getElementById("daButton");
+    var button2 = document.getElementById("prev");
+    
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);
+    
+    // transition functions for next
+    if (text5.style.display === "block") {
+        text5.style.display = "none";
+        text4.style.display = "block";
+        button1.style.display = "block";
+        graph(x,y,data);
+    } else if (text4.style.display === "block") {
+        text4.style.display = "none";
+        text3.style.display = "block";
+        d3.select("svg").html("");
+        axes(x,y);
+    } else if (text3.style.display === "block") {
+        text3.style.display = "none";
+        text2.style.display = "block";
+        d3.select("svg").html("");
+        axes(x,y);
+    } else {
+        text2.style.display = "none";
+        text.style.display = "block";
+        button2.style.display = "none";
+        d3.select("svg").html("");
+    }
+    
+}
+
+function axes(x,y) {
+    
+    // y-axis
+    d3.select("svg")
+    .append("g")
+    .attr("transform","translate("+50+","+50+")")
+    .call(d3.axisLeft(y).tickValues([10,20,50,100]).tickFormat(d3.format("~s")));
+
+    // x-axis
+    d3.select("svg")
+    .append("g")
+    .attr("transform","translate("+50+","+450+")")
+    .call(d3.axisBottom(x).tickValues([10,20,50,100]).tickFormat(d3.format("~s")));
+    
+}
+    
+function graph(x,y,data) {
+    
+    d3.select("svg").html("");
+    
+    axes(x,y);
+
+    // Tooltips made possible with help from https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+    var div = d3.select("body").append("div")	
+        .attr("class", "tooltip")				
+        .style("opacity", 0);
+    
+    // graph data
+    var svg = d3.select("svg")
+    .append("g")
+    .attr("transform","translate("+50+","+50+")")
+    .selectAll("circle").data(data).enter().append("circle")
+    .attr("cx",function(d) {return x(d.AverageCityMPG);})
+    .attr("cy",function(d) {return y(d.AverageHighwayMPG);})
+    .attr("r",0);
+    
+    svg.transition().duration(3000).delay(1000)
+    .attr("r",3);
+    
+    svg.on("mouseover", function(d) {		
+            div.style("opacity", .9);		
+            div.html("Average City MPG: " + d.AverageCityMPG + "<br/>Average Highway MPG: " + d.AverageHighwayMPG)	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY) + "px");
+            })
+    .on("mouseout", function(d) {		
+            div.style("opacity", 0);	
+        });
+    
+}
+    
+function graph2(x,y,data) {
+    
+    // Tooltips made possible with help from https://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+    var div = d3.select("body").append("div")	
+        .attr("class", "tooltip")				
+        .style("opacity", 0);
+    
+    d3.select("svg").html("");
+    
+    axes(x,y);
+    
+    var svg = d3.select("svg")
+    .append("g")
+    .attr("transform","translate("+50+","+50+")")
+    .selectAll("circle").data(data).enter().append("circle")
+    .attr("cx",function(d) {return x(d.AverageCityMPG);})
+    .attr("cy",function(d) {return y(d.AverageHighwayMPG);})
+    .attr("r",3);
+    
+    svg.transition().duration(3000).delay(1000)
+    .attr("r",function(d) {return 2+parseInt(d.EngineCylinders);});
+    
+    svg.on("mouseover", function(d) {		
+            div.style("opacity", .9);		
+            div.html("Average City MPG: " + d.AverageCityMPG + "<br/>Average Highway MPG: "
+                     + d.AverageHighwayMPG + "<br/>Engine Cylinders: " + d.EngineCylinders)	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY) + "px")
+                .style("height",42);
+            })
+    .on("mouseout", function(d) {		
+            div.style("opacity", 0);	
+        });
+    
+}
+</script>
+</body>
+</document>
+</html>
